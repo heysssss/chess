@@ -27,260 +27,22 @@ class ChessModel:
     
     def legal_moves(self, row: int, col: int) -> set[tuple[int, int]]:
         # returns all legal moves of piece at row, col
-        path: dict[tuple[int, int], set[tuple[int, int]]] = {} # path to be taken by piece, does not include start
-        possible_moves: set[tuple[int, int]] = set()
-
         piece = self._board[row][col]
         match piece:
             case None:
                 return set()
             case Pawn():
-                possible_moves = piece.possible_moves
-                special_moves = piece.special_moves
-                # forward
-                for m in possible_moves:
-                    if self.turn == PieceColor.WHITE:
-                        poss_path: set[tuple[int, int]] = {(m[0] + 1, m[1])} if not ((m[0] + 1, m[1]) == (row, col)) else set()
-                        poss_path.add((m[0], m[1]))
-                    else:
-                        poss_path: set[tuple[int, int]] = {(m[0] - 1, m[1])} if not ((m[0] - 1, m[1]) == (row, col)) else set()
-                        poss_path.add((m[0], m[1]))
-
-                    poss_path = {
-                        (pr, pc)
-                        for pr, pc in poss_path
-                        if 0 <= pr < 8 and 0 <= pc < 8
-                    }
-                
-                    if any(self._board[pr][pc] is not None for pr, pc in poss_path):
-                        continue  # skip this move
-                    else:
-                        path[m] = poss_path  # keep only valid moves
-
-                # diagonal
-                for m in special_moves:
-                    # cant take own piece
-                    if not self.in_bounds(m[0], m[1]):
-                        continue
-
-                    to_take = self._board[m[0]][m[1]]
-                    if to_take is not None:
-                        if to_take.color == self.turn:
-                            continue
-                        else:
-                            poss_path: set[tuple[int, int]] = set()
-                            poss_path.add((m[0], m[1]))
-
-                            poss_path = {
-                                (pr, pc)
-                                for pr, pc in poss_path
-                                if 0 <= pr < 8 and 0 <= pc < 8
-                            }
-
-                            path[m] = poss_path
-                    
-                return set(path.keys())
-            
+                return self.pawn_legal_moves(row, col)
             case Rook():
-                possible_moves = piece.possible_moves
-                # forward
-                for m in possible_moves:
-                    # cant take own piece
-                    if not self.in_bounds(m[0], m[1]):
-                        continue
-
-                    to_take = self._board[m[0]][m[1]]
-                    if to_take is not None:
-                        if to_take.color == self.turn:
-                            continue
-
-                    poss_path_row: set[tuple[int, int]] = {(m[0], j)
-                                                           for j in range(min(col, m[1]) + 1, max(col, m[1]))
-                                                          }
-                    poss_path_col: set[tuple[int, int]] = {(i, m[1])
-                                                           for i in range(min(row, m[0]) + 1, max(row, m[0])
-                                                           )
-                                                          }
-                    poss_path = poss_path_row | poss_path_col
-
-                    poss_path = {
-                        (pr, pc)
-                        for pr, pc in poss_path
-                        if 0 <= pr < 8 and 0 <= pc < 8
-                    }
-                
-                    if any(self._board[pr][pc] is not None for pr, pc in poss_path):
-                        continue  # skip this move
-                    else:
-                        path[m] = poss_path  # keep only valid moves
-                    
-                return set(path.keys())
-            
+                return self.rook_legal_moves(row, col)     
             case Knight():
-                possible_moves = piece.possible_moves
-
-                for m in possible_moves:
-                    # cant take own piece
-                    if not self.in_bounds(m[0], m[1]):
-                        continue
-
-                    to_take = self._board[m[0]][m[1]]
-                    if to_take is not None:
-                        if to_take.color == self.turn:
-                            continue
-                        else:
-                            path[m] = set()
-                    else:
-                        path[m] = set()
-                
-                return set(path.keys())
-
+                return self.knight_legal_moves(row, col)
             case Bishop():
-                possible_moves = piece.possible_moves
-                
-                for m in possible_moves:
-                    poss_path: set[tuple[int, int]] = set()
-
-                    # cant take own piece
-                    if not self.in_bounds(m[0], m[1]):
-                        continue
-
-                    to_take = self._board[m[0]][m[1]]
-                    if to_take is not None:
-                        if to_take.color == self.turn:
-                            continue
-
-                    # lower right
-                    if m[0] > row and m[1] > col:
-                        poss_path = {(row + i, col + i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                    # lower left
-                    elif m[0] > row and m[1] < col:
-                        poss_path = {(row + i, col - i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                    # upper right
-                    elif m[0] < row and m[1] > col:
-                        poss_path = {(row - i, col + i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                    # upper left
-                    else:
-                        poss_path = {(row - i, col - i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                        
-                    poss_path = {
-                        (pr, pc)
-                        for pr, pc in poss_path
-                        if 0 <= pr < 8 and 0 <= pc < 8
-                    }
-
-                    if any(self._board[pr][pc] is not None for pr, pc in poss_path):
-                        continue  # skip this move
-                    else:
-                        path[m] = poss_path  # keep only valid moves
-                    
-                return set(path.keys())
-            
+                return self.bishop_legal_moves(row, col)
             case King():
-                possible_moves = piece.possible_moves
-                special_moves = piece.special_moves
-
-                # normal move
-                for m in possible_moves:
-                    if not self.in_bounds(m[0], m[1]):
-                        continue
-
-                    to_take = self._board[m[0]][m[1]]
-                    if to_take is not None:
-                        if to_take.color == self.turn:
-                            continue
-
-                    path[m] = set() 
-                
-                # castling (can't pass through checks)
-                for s in special_moves:
-                    # check path of whole castling
-                    poss_path_row: set[tuple[int, int]] = {(s[0], j)
-                                                           for j in range(min(col, s[1]) + 1, max(col, s[1]))
-                                                          }
-
-                    poss_path: set[tuple[int, int]] = set()
-
-                    poss_path = {
-                        (pr, pc)
-                        for pr, pc in poss_path
-                        if 0 <= pr < 8 and 0 <= pc < 8
-                    }
-                
-                    if any(self._board[pr][pc] is not None for pr, pc in poss_path):
-                        continue  # skip this move
-                    else:
-                        path[s] = poss_path  # keep only valid moves
-                    
-                return set(path.keys())
-            
+                return self.king_legal_moves(row, col)  
             case Queen():
-                possible_moves = piece.possible_moves
-                
-                for m in possible_moves:
-                    # cant take own piece
-                    if not self.in_bounds(m[0], m[1]):
-                        continue
-
-                    to_take = self._board[m[0]][m[1]]
-                    if to_take is not None:
-                        if to_take.color == self.turn:
-                            continue
-                    
-                    # rook movement
-                    if m[0] == row:
-                        poss_path: set[tuple[int, int]] = {(m[0], j)
-                                                           for j in range(min(col, m[1]) + 1, max(col, m[1]))
-                                                          }
-                    elif m[1] == col:
-                        poss_path: set[tuple[int, int]] = {(i, m[1])
-                                                           for i in range(min(row, m[0]) + 1, max(row, m[0])
-                                                           )
-                                                          }
-                    
-                    # diagonals
-                    # lower right
-                    elif m[0] > row and m[1] > col:
-                        poss_path = {(row + i, col + i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                    # lower left
-                    elif m[0] > row and m[1] < col:
-                        poss_path = {(row + i, col - i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                    # upper right
-                    elif m[0] < row and m[1] > col:
-                        poss_path = {(row - i, col + i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                    # upper left
-                    else:
-                        poss_path = {(row - i, col - i)
-                                     for i in range(1, max(row, m[0]) - min(row, m[0]))
-                                     }
-                        
-                    poss_path = {
-                        (pr, pc)
-                        for pr, pc in poss_path
-                        if 0 <= pr < 8 and 0 <= pc < 8
-                    }
-
-                    if any(self._board[pr][pc] is not None for pr, pc in poss_path):
-                        continue  # skip this move
-                    else:
-                        path[m] = poss_path  # keep only valid moves
-                    
-                return set(path.keys())
-            
+                return self.queen_legal_moves(row, col)
             case _:
                 print("What piece is this bruh.")
                 raise ValueError() 
@@ -344,7 +106,10 @@ class ChessModel:
         return False     
 
     def winner(self) -> PieceColor | None:
-        ...
+        # check
+        if self.is_in_check(self._board):
+            return PieceColor.WHITE if self.turn == PieceColor.BLACK else PieceColor.BLACK
+        return None
 
     ########
     # move #
@@ -378,17 +143,83 @@ class ChessModel:
             return False
 
         # check if valid move of piece
-        # check if castle or en passant
-        # check if in check
-        if self.is_in_check(self.next_move_board((cf_row, cf_col), (ct_row, ct_col), promote)):
-            print("This move will result in the elimination of your life. (King will be in check)")
-            return False
+        # check if castle or en passant or promote
 
-        # move piece normally and capture and update board
-        if piece_to_move is not None:
+        # castling
+        if type(piece_to_move) == King and abs(ct_col - cf_row) == 2:
+            # rook to castle with
+            # kingside
+            if ct_col > cf_col:
+                cfr_col = 7
+                rook_to_castle = self._board[cf_row][cfr_col]
+                ctr_col = 5
+            # queenside
+            else:
+                cfr_col = 0
+                rook_to_castle = self._board[cf_row][cfr_col]
+                ctr_col = 3
+
+            if rook_to_castle is None:
+                print("There is no rook to castle with.")
+                return False
+            else:
+                # must be rook's first move
+                if not rook_to_castle.moves == 0:
+                    print("The rook to castle with has already moved.")
+                    return False
+            # king was already checked by previous line
+            # king cannot castle out of check
+            if self.is_in_check(self._board):
+                print("King cannot castle out of check.")
+                return False
+            # check if path is in check
+            col_to_check = (cf_col + ct_col)//2
+            if self.is_under_attack(cf_row, col_to_check, self._board):
+                print("King cannot pass through a covered area.")
+                return False
+            if self.is_under_attack(cf_row, ct_col, self._board):
+                print("King cannot go to a check voluntarily")
+                return False
+            
+            # successful castle
             piece_to_move.move((ct_row, ct_col))
             self._board[ct_row][ct_col] = piece_to_move
             self._board[cf_row][cf_col] = None
+
+            rook_to_castle.move((ct_row, ctr_col))
+            self._board[ct_row][ctr_col] = rook_to_castle
+            self._board[cf_row][cfr_col] = None
+            
+        # en passant
+        elif type(piece_to_move) == Pawn and (cf_row == 4 or cf_row == 3):
+            if (ct_row, ct_col) in piece_to_move.special_moves:
+                adjacent = self._board[cf_row][ct_col]
+                if adjacent is not None:
+                    if type(adjacent) == Pawn and adjacent.moves == 1:
+                        # legal_moves already checked en passant
+                        piece_to_move.move((ct_row, ct_col))
+                        self._board[ct_row][ct_col] = piece_to_move
+                        self._board[cf_row][cf_col] = None
+                        self._board[cf_row][ct_col] = None
+                        
+        # promote
+
+        # normal move
+
+        # check if in check after the move (pinned cases)
+        else:
+            board = [x for x in self._board]
+            board[ct_row][ct_col] = piece_to_move
+            board[cf_row][cf_col] = None
+            if self.is_in_check(board):
+                print("This move will result in the elimination of your life. (King will be in check)")
+                return False
+
+            # move piece normally and capture and update board
+            if piece_to_move is not None:
+                piece_to_move.move((ct_row, ct_col))
+                self._board[ct_row][ct_col] = piece_to_move
+                self._board[cf_row][cf_col] = None
 
         return True
 
@@ -399,19 +230,300 @@ class ChessModel:
             self._turn = PieceColor.WHITE
         self._total_turns += 1
 
+    #####################
+    # piece legal_moves #
+    #####################
+
+    def pawn_legal_moves(self, row: int, col: int) -> set[tuple[int, int]]:
+        path: dict[tuple[int, int], set[tuple[int, int]]] = {}
+
+        piece = self._board[row][col]
+        if piece is not None:
+            possible_moves: set[tuple[int, int]] = piece.possible_moves
+            special_moves: set[tuple[int, int]] = piece.special_moves
+            # forward
+            for m in possible_moves:
+                if self.turn == PieceColor.WHITE:
+                    poss_path: set[tuple[int, int]] = {(m[0] + 1, m[1])} if not ((m[0] + 1, m[1]) == (row, col)) else set()
+                    poss_path.add((m[0], m[1]))
+                else:
+                    poss_path: set[tuple[int, int]] = {(m[0] - 1, m[1])} if not ((m[0] - 1, m[1]) == (row, col)) else set()
+                    poss_path.add((m[0], m[1]))
+
+                poss_path = {
+                    (pr, pc)
+                    for pr, pc in poss_path
+                    if 0 <= pr < 8 and 0 <= pc < 8
+                }
+            
+                if any(self._board[pr][pc] is not None for pr, pc in poss_path):
+                    continue  # skip this move
+                else:
+                    path[m] = poss_path  # keep only valid moves
+
+            # diagonal
+            for m in special_moves:
+                # cant take own piece
+                if not self.in_bounds(m[0], m[1]):
+                    continue
+
+                to_take = self._board[m[0]][m[1]]
+                if to_take is not None:
+                    if to_take.color == self.turn:
+                        continue
+                    else:
+                        poss_path: set[tuple[int, int]] = set()
+                        poss_path.add((m[0], m[1]))
+
+                        poss_path = {
+                            (pr, pc)
+                            for pr, pc in poss_path
+                            if 0 <= pr < 8 and 0 <= pc < 8
+                        }
+
+                        path[m] = poss_path
+                else:
+                    # en passant
+                    adjacent = self._board[row][m[1]]
+                    if type(adjacent) == Pawn:
+                        if adjacent.moves == 1:
+                            poss_path: set[tuple[int, int]] = set()
+                            poss_path.add((m[0], m[1]))
+
+                            poss_path = {
+                                (pr, pc)
+                                for pr, pc in poss_path
+                                if 0 <= pr < 8 and 0 <= pc < 8
+                            }
+
+                            path[m] = poss_path
+
+                
+        return set(path.keys())
+    
+    def rook_legal_moves(self, row: int, col: int) -> set[tuple[int, int]]:
+        path: dict[tuple[int, int], set[tuple[int, int]]] = {}
+
+        piece = self._board[row][col]
+        if piece is not None:
+            possible_moves = piece.possible_moves
+            # forward
+            for m in possible_moves:
+                # cant take own piece
+                if not self.in_bounds(m[0], m[1]):
+                    continue
+
+                to_take = self._board[m[0]][m[1]]
+                if to_take is not None:
+                    if to_take.color == self.turn:
+                        continue
+
+                poss_path_row: set[tuple[int, int]] = {(m[0], j)
+                                                        for j in range(min(col, m[1]) + 1, max(col, m[1]))
+                                                        }
+                poss_path_col: set[tuple[int, int]] = {(i, m[1])
+                                                        for i in range(min(row, m[0]) + 1, max(row, m[0])
+                                                        )
+                                                        }
+                poss_path = poss_path_row | poss_path_col
+
+                poss_path = {
+                    (pr, pc)
+                    for pr, pc in poss_path
+                    if 0 <= pr < 8 and 0 <= pc < 8
+                }
+            
+                if any(self._board[pr][pc] is not None for pr, pc in poss_path):
+                    continue  # skip this move
+                else:
+                    path[m] = poss_path  # keep only valid moves
+                    
+        return set(path.keys())
+
+    def knight_legal_moves(self, row: int, col: int) -> set[tuple[int, int]]:
+        path: dict[tuple[int, int], set[tuple[int, int]]] = {}
+
+        piece = self._board[row][col]
+        if piece is not None:
+            possible_moves = piece.possible_moves
+
+            for m in possible_moves:
+                # cant take own piece
+                if not self.in_bounds(m[0], m[1]):
+                    continue
+
+                to_take = self._board[m[0]][m[1]]
+                if to_take is not None:
+                    if to_take.color == self.turn:
+                        continue
+                    else:
+                        path[m] = set()
+                else:
+                    path[m] = set()
+            
+        return set(path.keys())
+
+    def bishop_legal_moves(self, row: int, col: int) -> set[tuple[int, int]]:
+        path: dict[tuple[int, int], set[tuple[int, int]]] = {}
+
+        piece = self._board[row][col]
+        if piece is not None:
+            possible_moves = piece.possible_moves
+                
+            for m in possible_moves:
+                poss_path: set[tuple[int, int]] = set()
+
+                # cant take own piece
+                if not self.in_bounds(m[0], m[1]):
+                    continue
+
+                to_take = self._board[m[0]][m[1]]
+                if to_take is not None:
+                    if to_take.color == self.turn:
+                        continue
+
+                # lower right
+                if m[0] > row and m[1] > col:
+                    poss_path = {(row + i, col + i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                # lower left
+                elif m[0] > row and m[1] < col:
+                    poss_path = {(row + i, col - i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                # upper right
+                elif m[0] < row and m[1] > col:
+                    poss_path = {(row - i, col + i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                # upper left
+                else:
+                    poss_path = {(row - i, col - i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                    
+                poss_path = {
+                    (pr, pc)
+                    for pr, pc in poss_path
+                    if 0 <= pr < 8 and 0 <= pc < 8
+                }
+
+                if any(self._board[pr][pc] is not None for pr, pc in poss_path):
+                    continue  # skip this move
+                else:
+                    path[m] = poss_path  # keep only valid moves
+                    
+        return set(path.keys())
+
+    def king_legal_moves(self, row: int, col: int) -> set[tuple[int, int]]:
+        path: dict[tuple[int, int], set[tuple[int, int]]] = {}
+
+        piece = self._board[row][col]
+        if piece is not None:
+            possible_moves = piece.possible_moves
+            special_moves = piece.special_moves
+
+            # normal move
+            for m in possible_moves:
+                if not self.in_bounds(m[0], m[1]):
+                    continue
+
+                to_take = self._board[m[0]][m[1]]
+                if to_take is not None:
+                    if to_take.color == self.turn:
+                        continue
+
+                path[m] = set() 
+            
+            # castling (can't pass through checks)
+            for s in special_moves:
+                # check path of whole castling
+                poss_path_row: set[tuple[int, int]] = {(s[0], j)
+                                                        for j in range(min(col, s[1]) + 1, max(col, s[1]))
+                                                        }
+
+                poss_path: set[tuple[int, int]] = poss_path_row
+
+                poss_path = {
+                    (pr, pc)
+                    for pr, pc in poss_path
+                    if 0 <= pr < 8 and 0 <= pc < 8
+                }
+            
+                if any(self._board[pr][pc] is not None for pr, pc in poss_path):
+                    continue  # skip this move
+                else:
+                    path[s] = poss_path  # keep only valid moves
+                
+        return set(path.keys())
+
+    def queen_legal_moves(self, row: int, col: int) -> set[tuple[int, int]]:
+        path: dict[tuple[int, int], set[tuple[int, int]]] = {}
+
+        piece = self._board[row][col]
+        if piece is not None:
+            possible_moves = piece.possible_moves
+                
+            for m in possible_moves:
+                # cant take own piece
+                if not self.in_bounds(m[0], m[1]):
+                    continue
+
+                to_take = self._board[m[0]][m[1]]
+                if to_take is not None:
+                    if to_take.color == self.turn:
+                        continue
+                
+                # rook movement
+                if m[0] == row:
+                    poss_path: set[tuple[int, int]] = {(m[0], j)
+                                                        for j in range(min(col, m[1]) + 1, max(col, m[1]))
+                                                        }
+                elif m[1] == col:
+                    poss_path: set[tuple[int, int]] = {(i, m[1])
+                                                        for i in range(min(row, m[0]) + 1, max(row, m[0])
+                                                        )
+                                                        }
+                
+                # diagonals
+                # lower right
+                elif m[0] > row and m[1] > col:
+                    poss_path = {(row + i, col + i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                # lower left
+                elif m[0] > row and m[1] < col:
+                    poss_path = {(row + i, col - i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                # upper right
+                elif m[0] < row and m[1] > col:
+                    poss_path = {(row - i, col + i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                # upper left
+                else:
+                    poss_path = {(row - i, col - i)
+                                    for i in range(1, max(row, m[0]) - min(row, m[0]))
+                                    }
+                    
+                poss_path = {
+                    (pr, pc)
+                    for pr, pc in poss_path
+                    if 0 <= pr < 8 and 0 <= pc < 8
+                }
+
+                if any(self._board[pr][pc] is not None for pr, pc in poss_path):
+                    continue  # skip this move
+                else:
+                    path[m] = poss_path  # keep only valid moves
+                
+        return set(path.keys())
+
     ###########
     # helpers #
     ###########
-
-    def next_move_board(self, cell_from: tuple[int, int], cell_to: tuple[int, int], promote: str | None) -> list[list[Piece | None]]:
-        mock_board = [x for x in self._board]
-
-        mock_board[cell_to[0]][cell_to[1]] = mock_board[cell_from[0]][cell_from[1]]
-        mock_board[cell_from[0]][cell_from[1]] = None
-
-        # en passant and castling not included yet
-
-        return mock_board
 
     def set_board(self, str_board: list[list[str]]):
         row_list: list[list[Piece | None]] = []
