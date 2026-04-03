@@ -28,11 +28,15 @@ class Piece(ABC):
     @property
     def color(self):
         return self._color
+    
+    @property
+    def str_color(self):
+        return "w" if self.color == PieceColor.WHITE else "b" 
 
-    # @abstractmethod
-    # @property
-    # def str_rep(self) -> str:
-    #     ...
+    @property
+    @abstractmethod
+    def str_rep(self) -> str:
+        ...
 
     @property
     @abstractmethod
@@ -94,6 +98,10 @@ class Pawn(Piece):
                     )   
 
         return poss_moves
+    
+    @property
+    def str_rep(self) -> str:
+        return f"{self.str_color}p"
 
 
 class Rook(Piece):
@@ -115,6 +123,10 @@ class Rook(Piece):
         # no special move
         ...
 
+    @property
+    def str_rep(self) -> str:
+        return f"{self.str_color}r"
+
 class Knight(Piece):
     @property
     def possible_moves(self) -> set[tuple[int, int]]:
@@ -135,6 +147,10 @@ class Knight(Piece):
         # no special move
         ...
 
+    @property
+    def str_rep(self) -> str:
+        return f"{self.str_color}n"
+
 class Bishop(Piece):
     @property
     def possible_moves(self) -> set[tuple[int, int]]:
@@ -153,6 +169,10 @@ class Bishop(Piece):
     def special_moves(self) -> set[tuple[int, int]]:
         # no special move
         ...
+    
+    @property
+    def str_rep(self) -> str:
+        return f"{self.str_color}b"
 
 class King(Piece):
     @property
@@ -178,6 +198,10 @@ class King(Piece):
             poss_moves.add((self.row, self.col - 2))
         return poss_moves
 
+    @property
+    def str_rep(self) -> str:
+        return f"{self.str_color}k"
+
 class Queen(Piece):
     @property
     def possible_moves(self) -> set[tuple[int, int]]:
@@ -197,6 +221,10 @@ class Queen(Piece):
     def special_moves(self) -> set[tuple[int, int]]:
         # no special move
         ...
+
+    @property
+    def str_rep(self) -> str:
+        return f"{self.str_color}q"
     
 
     
